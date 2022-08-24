@@ -1,0 +1,51 @@
+import java.text.SimpleDateFormat
+
+plugins {
+    id 'java'
+    id 'scala'
+    id 'idea'
+}
+
+println("====== [${now()}] build.gradle的配置阶段")
+
+group 'com.convertlab.data'
+
+def scala_version = System.getProperty("scala_version") ?: "2.12"
+def spark_version = System.getProperty("spark_version") ?: "3.2.1"
+
+repositories {
+    mavenCentral()
+    maven { url "https://repository.cloudera.com/artifactory/libs-release-local/" }
+}
+
+configurations {
+    // configuration that holds jars to include in the jar
+    extraLibs
+}
+
+dependencies {
+    println("====== [${now()}] dependencies start ======")
+
+    compile "org.scala-lang:scala-library:2.12.15"
+    compileOnly group: 'org.apache.spark', name: "spark-core_$scala_version", version: "${spark_version}"
+    compileOnly group: 'org.apache.spark', name: "spark-sql_$scala_version", version: "${spark_version}"
+
+    configurations.compile.extendsFrom(configurations.extraLibs)
+
+    println("====== [${now()}] dependencies finish ======")
+}
+
+jar {
+    from {
+        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtime.collect { zipTree(it) }
+    }
+}
+
+afterEvaluate {
+    println("====== [${now()}] afterEvaluate -> [$name]配置完成")
+}
+
+static now() {
+    new SimpleDateFormat("yyyy-MM-dd HH.mm.ss.SSS").format(new Date())
+}
